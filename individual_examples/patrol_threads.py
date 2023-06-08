@@ -1,4 +1,5 @@
 import rclpy
+import threading
 from rclpy.action import ActionClient
 from rclpy.node import Node
 
@@ -150,5 +151,35 @@ def main(args=None):
         rclpy.shutdown()
 
 
+def spin_thread(finished, ros_ready):
+    print("starting")
+    rclpy.init(args=None)
+    print("init done")
+
+    driving = DriveDistanceActionClient()
+    print("node set up; awaiting ROS2 startup...")
+    executor = rclpy.get_global_executor()
+    executor.add_node(driving)
+    while executor.context.ok() and not finished.is_set():
+        executor.spin_once()
+        if driving.ros_issuing_callbacks():
+            ros_ready.set()
+    rclpy.shutdown()
+
+
+def input_thread(finished, ros_ready):
+    ros_ready.wait()
+    user = input("Type anything to exit")
+    finished.set()
+
+
 if __name__ == '__main__':
-    main()
+    finished = threading.Event()
+    ros_ready = threading.Event()
+    
+    dt = threading.Thread(target=spin_thread, args=(finished,ros_ready))
+    it = threading.Thread(target=input_thread, args=(finished,ros_ready))
+    it.start()
+    dt.start()
+    it.join()
+    dt.join()
