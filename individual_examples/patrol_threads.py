@@ -221,7 +221,7 @@ if __name__ == '__main__':
     it = threading.Thread(target=input_thread, args=(finished,ros_ready))
     it.start()
     dt.start()
-    st.start()
     it.join()
     dt.join()
+    st.start()
     st.join()
