@@ -1,5 +1,4 @@
 import rclpy
-import threading
 from rclpy.action import ActionClient
 from rclpy.node import Node
 
@@ -128,56 +127,28 @@ class RotateActionClient(Node):
         self.get_logger().info('Result: {0}'.format(result))
         #rclpy.shutdown()
 
+def main(args=None):
+    rclpy.init(args=args)
 
-def drive_thread(finished, ros_ready):
-    print("starting")
-    rclpy.init(args=None)
-    print("init done")
+    action_client = DriveDistanceActionClient()
+    action_client2 = RotateActionClient()
 
-    driving = DriveDistanceActionClient()
-    print("node set up; awaiting ROS2 startup...")
-    executor = rclpy.get_global_executor()
-    executor.add_node(driving)
-    while executor.context.ok() and not finished.is_set():
-        executor.spin_once()
-        if driving.ros_issuing_callbacks():
-            ros_ready.set()
-    driving.reset()
-    #rclpy.shutdown()
+    dist  = 1.0
+    angle = 1.5
+    speed = 0.5
 
-def spin_thread(finished, ros_ready):
-    print("starting")
-    rclpy.init(args=None)
-    print("init done")
-
-    turning = RotateActionClient()
-    print("node set up; awaiting ROS2 startup...")
-    executor = rclpy.get_global_executor()
-    executor.add_node(turning)
-    while executor.context.ok() and not finished.is_set():
-        executor.spin_once()
-        if turning.ros_issuing_callbacks():
-            ros_ready.set()
-    turning.reset()
-    rclpy.shutdown()
-
-
-def input_thread(finished, ros_ready):
-    ros_ready.wait()
-    user = input("Type anything to exit")
-    finished.set()
+    action_client.send_goal(dist, speed)
+    action_client2.send_goal(angle,speed)
+    try:
+        print("Try Spinning")
+        rclpy.spin(action_client)
+        rclpy.spin(action_client2)
+    except KeyboardInterrupt:
+        print('\nCaught keyboard interrupt')
+    finally:
+        print("Done")
+        rclpy.shutdown()
 
 
 if __name__ == '__main__':
-    finished = threading.Event()
-    ros_ready = threading.Event()
-
-    dt = threading.Thread(target=drive_thread, args=(finished,ros_ready))
-    st = threading.Thread(target=spin_thread, args=(finished,ros_ready))
-    it = threading.Thread(target=input_thread, args=(finished,ros_ready))
-    dt.start()
-    it.start()
-    st.start()
-    dt.join()
-    it.join()
-    st.join()
+    main()
