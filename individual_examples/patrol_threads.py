@@ -171,7 +171,7 @@ def main(args=None):
         rclpy.shutdown()
 
 
-def spin_thread(finished, ros_ready):
+def drive_thread(finished, ros_ready):
     print("starting")
     rclpy.init(args=None)
     print("init done")
@@ -188,6 +188,23 @@ def spin_thread(finished, ros_ready):
             ros_ready.set()
     rclpy.shutdown()
 
+def spin_thread(finished, ros_ready):
+    print("starting")
+    rclpy.init(args=None)
+    print("init done")
+    angle = 3.3
+    speed = 0.5
+
+    spinner = RotateActionClient()
+    print("node 2 set up; awaiting ROS2 startup...")
+    executor = rclpy.get_global_executor()
+    executor.add_node(spinner.send_goal(angle, speed))
+    while executor.context.ok() and not finished.is_set():
+        executor.spin_once()
+        if spinner.ros_issuing_callbacks():
+            ros_ready.set()
+    rclpy.shutdown()
+
 
 def input_thread(finished, ros_ready):
     ros_ready.wait()
@@ -199,9 +216,12 @@ if __name__ == '__main__':
     finished = threading.Event()
     ros_ready = threading.Event()
     
-    dt = threading.Thread(target=spin_thread, args=(finished,ros_ready))
+    dt = threading.Thread(target=drive_thread, args=(finished,ros_ready))
+    st = threading.Thread(target=spin_thread, args=(finished, ros_ready))
     it = threading.Thread(target=input_thread, args=(finished,ros_ready))
     it.start()
     dt.start()
+    st.start()
     it.join()
     dt.join()
+    st.join()
