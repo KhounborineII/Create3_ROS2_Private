@@ -1,3 +1,4 @@
+import time
 import rclpy
 import threading
 from rclpy.action import ActionClient
@@ -23,6 +24,8 @@ class DriveDistanceActionClient(Node):
         super().__init__('drive_distance_action_client')
         self._action_client = ActionClient(
             self, DriveDistance, 'sena/drive_distance')
+        
+        self.first_callback_time = None
 
     def send_goal(self, distance=1.0, max_translation_speed=0.5):
         '''
@@ -55,6 +58,10 @@ class DriveDistanceActionClient(Node):
 
         self.get_logger().info('Goal accepted :)')
 
+        if self.first_callback_time is None:
+            self.first_callback_time = self.elapsed_time()
+            print(f"ROS2 activated at {self.first_callback_time}")
+
         self._get_result_future = goal_handle.get_result_async()
         self._get_result_future.add_done_callback(self.get_result_callback)
 
@@ -67,7 +74,10 @@ class DriveDistanceActionClient(Node):
         result = future.result().result
         self.get_logger().info('Result: {0}'.format(result))
         #rclpy.shutdown()
+    
 
+    def ros_issuing_callbacks(self):
+        return self.first_callback_time is not None
 
 class RotateActionClient(Node):
     '''
@@ -84,6 +94,8 @@ class RotateActionClient(Node):
         '''
         super().__init__('rotate_action_client')
         self._action_client = ActionClient(self, RotateAngle, 'sena/rotate_angle')
+
+        self.first_callback_time = None
 
     def send_goal(self, angle=3.3, max_rotation_speed=0.5):
         '''
@@ -115,6 +127,10 @@ class RotateActionClient(Node):
 
         self.get_logger().info('Goal accepted :)')
 
+        if self.first_callback_time is None:
+            self.first_callback_time = self.elapsed_time()
+            print(f"ROS2 activated at {self.first_callback_time}")
+
         self._get_result_future = goal_handle.get_result_async()
         self._get_result_future.add_done_callback(self.get_result_callback)
 
@@ -127,6 +143,10 @@ class RotateActionClient(Node):
         result = future.result().result
         self.get_logger().info('Result: {0}'.format(result))
         #rclpy.shutdown()
+
+    def ros_issuing_callbacks(self):
+        return self.first_callback_time is not None
+    
 
 def main(args=None):
     rclpy.init(args=args)
