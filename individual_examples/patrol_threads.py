@@ -175,11 +175,13 @@ def spin_thread(finished, ros_ready):
     print("starting")
     rclpy.init(args=None)
     print("init done")
+    dist  = 1.0
+    speed = 0.5
 
     driving = DriveDistanceActionClient()
     print("node set up; awaiting ROS2 startup...")
     executor = rclpy.get_global_executor()
-    executor.add_node(driving)
+    executor.add_node(driving.send_goal(dist, speed))
     while executor.context.ok() and not finished.is_set():
         executor.spin_once()
         if driving.ros_issuing_callbacks():
