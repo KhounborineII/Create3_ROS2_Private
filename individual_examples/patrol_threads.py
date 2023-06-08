@@ -183,6 +183,7 @@ def drive_thread(finished, ros_ready):
     executor = rclpy.get_global_executor()
     executor.add_node(driving.send_goal(dist, speed))
     while executor.context.ok() and not finished.is_set():
+        executor.spin_once()
         if driving.ros_issuing_callbacks():
             ros_ready.set()
     rclpy.shutdown()
@@ -199,6 +200,7 @@ def spin_thread(finished, ros_ready):
     executor = rclpy.get_global_executor()
     executor.add_node(spinner.send_goal(angle, speed))
     while executor.context.ok() and not finished.is_set():
+        executor.spin_once()
         if spinner.ros_issuing_callbacks():
             ros_ready.set()
     rclpy.shutdown()
