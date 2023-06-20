@@ -33,6 +33,7 @@ class SonarBot1(runner.HdxNode):
         self.turn_right = Twist()
         self.turn_right.angular.z = -1.0
         self.ir_clear_count = 0
+        self.bump_clear = True
 
     def timer_callback(self):
         self.record_first_callback()
@@ -47,7 +48,7 @@ class SonarBot1(runner.HdxNode):
             val = reading.value
             if det != "base_link":
                 self.ir_check(det, val)
-        if self.ir_clear_count == 7:
+        if self.ir_clear_count == 7 and self.bump_clear:
            self.publisher.publish(self.forward)
         self.ir_clear_count = 0
 
@@ -62,12 +63,15 @@ class SonarBot1(runner.HdxNode):
             self.ir_clear_count += 1
 
     def bumper_callback(self, msg):
-         for bumper in msg.detections:
+        for bumper in msg.detections:
             det = bumper.header.frame_id
             self.bumper_check(det)
+        self.bump_clear = True
+        
 
     def bumper_check(self, bumper: str = ""):
         if bumper != "base_link":
+            self.bump_clear = False
             self.publisher.publish(self.backward)
             if bumper.endswith("right"):
                 self.publisher.publish(self.turn_left)
