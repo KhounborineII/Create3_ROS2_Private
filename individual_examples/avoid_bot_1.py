@@ -18,6 +18,10 @@ class SonarBot1(runner.HdxNode):
         self.buttons = self.create_subscription(InterfaceButtons, namespace + '/interface_buttons', self.button_callback, qos_profile_sensor_data)
         self.subscription = self.create_subscription(IrIntensityVector, namespace + '/ir_intensity', self.ir_callback, qos_profile_sensor_data)
 
+        timer_period = 0.25 # seconds
+        self.timer = self.create_timer(timer_period, self.timer_callback)
+        # Required for "Type Anything to Quit" from runner.py"
+
         self.forward = Twist()
         self.forward.linear.x = 0.5
         self.turn_left = Twist()
@@ -25,6 +29,9 @@ class SonarBot1(runner.HdxNode):
         self.turn_right = Twist()
         self.turn_right.angular.z = -1.0
         self.ir_clear_count = 0
+
+    def timer_callback(self):
+        self.record_first_callback()
 
     def button_callback(self, msg: InterfaceButtons):
         if msg.button_1.is_pressed or msg.button_2.is_pressed or msg.button_power.is_pressed:
